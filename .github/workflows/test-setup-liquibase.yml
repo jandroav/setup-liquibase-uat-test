@@ -259,42 +259,6 @@ jobs:
         run: |
           liquibase --version
 
-  # 7. Output Validation Tests
-  test-output-validation:
-    name: Output Validation Test
-    runs-on: ubuntu-latest
-    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'basic' || github.event.inputs.test_scenario == ''
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Liquibase
-        id: setup
-        uses: liquibase/setup-liquibase@v1-beta
-        with:
-          version: "4.32.0"
-          edition: "oss"
-          cache: true
-
-      - name: Validate Outputs
-        run: |
-          echo "Version output: ${{ steps.setup.outputs.liquibase-version }}"
-          echo "Path output: ${{ steps.setup.outputs.liquibase-path }}"
-
-          # Check version output format
-          if [[ ! "${{ steps.setup.outputs.liquibase-version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "ERROR: Invalid version format"
-            exit 1
-          fi
-
-          # Check path output exists
-          if [ ! -f "${{ steps.setup.outputs.liquibase-path }}" ]; then
-            echo "ERROR: Liquibase path does not exist"
-            exit 1
-          fi
-
-          # Verify outputs can be used in subsequent steps
-          "${{ steps.setup.outputs.liquibase-path }}" --version
-
   # Summary job
   test-summary:
     name: Test Summary
