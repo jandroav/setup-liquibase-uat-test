@@ -272,8 +272,7 @@ jobs:
         test-database-operations,
         test-invalid-version,
         test-pro-without-license,
-        test-caching-performance,
-        test-output-validation,
+        test-caching-performance
       ]
     steps:
       - name: Print Test Results
