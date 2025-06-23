@@ -1,18 +1,35 @@
 # .github/workflows/test-setup-liquibase.yml
-name: Test Setup Liquibase Beta
+name: Test Setup Liquibase Beta - Comprehensive UAT
 
 on:
   workflow_dispatch:
+    inputs:
+      test_scenario:
+        description: "Test scenario to run"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - basic
+          - platform
+          - integration
+          - error-handling
+          - performance
   push:
     branches: [main]
 
 jobs:
-  test-basic:
+  # 1. Basic Installation Tests
+  test-oss-basic:
+    name: OSS Basic Installation
     runs-on: ubuntu-latest
+    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'basic' || github.event.inputs.test_scenario == ''
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Liquibase OSS
+        id: setup-liquibase
         uses: liquibase/setup-liquibase@v1-beta
         with:
           version: "4.32.0"
@@ -23,3 +40,295 @@ jobs:
         run: |
           liquibase --version
           which liquibase
+
+      - name: Verify Outputs
+        run: |
+          echo "Liquibase Version: ${{ steps.setup-liquibase.outputs.liquibase-version }}"
+          echo "Liquibase Path: ${{ steps.setup-liquibase.outputs.liquibase-path }}"
+          if [ -z "${{ steps.setup-liquibase.outputs.liquibase-version }}" ]; then
+            echo "ERROR: liquibase-version output is empty"
+            exit 1
+          fi
+          if [ -z "${{ steps.setup-liquibase.outputs.liquibase-path }}" ]; then
+            echo "ERROR: liquibase-path output is empty"
+            exit 1
+          fi
+
+  test-oss-matrix:
+    name: OSS Matrix Tests
+    runs-on: ${{ matrix.os }}
+    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'basic' || github.event.inputs.test_scenario == ''
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        cache: [true, false]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Liquibase OSS
+        uses: liquibase/setup-liquibase@v1-beta
+        with:
+          version: "4.32.0"
+          edition: "oss"
+          cache: ${{ matrix.cache }}
+
+      - name: Verify Installation
+        run: |
+          liquibase --version
+          which liquibase
+
+  # 2. Platform-Specific Tests
+  test-cross-platform:
+    name: Cross-Platform Tests
+    runs-on: ${{ matrix.os }}
+    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'platform' || github.event.inputs.test_scenario == ''
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Liquibase
+        uses: liquibase/setup-liquibase@v1-beta
+        with:
+          version: "4.32.0"
+          edition: "oss"
+          cache: true
+
+      - name: Verify Installation
+        run: |
+          liquibase --version
+
+      - name: Test PATH Addition
+        shell: bash
+        run: |
+          if ! command -v liquibase &> /dev/null; then
+            echo "ERROR: liquibase not found in PATH"
+            exit 1
+          fi
+
+  # 3. Integration Tests
+  test-database-operations:
+    name: Database Operations Test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'integration' || github.event.inputs.test_scenario == ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Liquibase
+        uses: liquibase/setup-liquibase@v1-beta
+        with:
+          version: "4.32.0"
+          edition: "oss"
+          cache: true
+
+      - name: Create Test Changelog
+        run: |
+          cat > changelog.xml << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                             xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+            <changeSet id="1" author="test">
+              <createTable tableName="test_table">
+                <column name="id" type="int" autoIncrement="true">
+                  <constraints primaryKey="true"/>
+                </column>
+                <column name="name" type="varchar(255)"/>
+              </createTable>
+            </changeSet>
+          </databaseChangeLog>
+          EOF
+
+      - name: Run Liquibase Update
+        run: |
+          liquibase update \
+            --changelog-file=changelog.xml \
+            --url=jdbc:h2:mem:test \
+            --username=sa \
+            --password=
+
+      - name: Run Liquibase Status
+        run: |
+          liquibase status \
+            --changelog-file=changelog.xml \
+            --url=jdbc:h2:mem:test \
+            --username=sa \
+            --password=
+
+      - name: Run Liquibase Rollback
+        run: |
+          liquibase rollback-count 1 \
+            --changelog-file=changelog.xml \
+            --url=jdbc:h2:mem:test \
+            --username=sa \
+            --password=
+
+  # 4. Error Handling Tests
+  test-invalid-version:
+    name: Invalid Version Test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'error-handling' || github.event.inputs.test_scenario == ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test Invalid Version (Should Fail)
+        uses: liquibase/setup-liquibase@v1-beta
+        continue-on-error: true
+        id: invalid-version
+        with:
+          version: "invalid-version"
+          edition: "oss"
+
+      - name: Verify Failure
+        run: |
+          if [ "${{ steps.invalid-version.outcome }}" == "success" ]; then
+            echo "ERROR: Invalid version should have failed!"
+            exit 1
+          fi
+          echo "SUCCESS: Invalid version correctly failed"
+
+  test-pro-without-license:
+    name: Pro Without License Test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'error-handling' || github.event.inputs.test_scenario == ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test Pro Without License (Should Fail)
+        uses: liquibase/setup-liquibase@v1-beta
+        continue-on-error: true
+        id: pro-no-license
+        with:
+          version: "4.32.0"
+          edition: "pro"
+
+      - name: Verify Failure
+        run: |
+          if [ "${{ steps.pro-no-license.outcome }}" == "success" ]; then
+            echo "ERROR: Pro without license should have failed!"
+            exit 1
+          fi
+          echo "SUCCESS: Pro without license correctly failed"
+
+  # 5. Performance Tests
+  test-caching-performance:
+    name: Caching Performance Test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'performance' || github.event.inputs.test_scenario == ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: First Install (No Cache)
+        uses: liquibase/setup-liquibase@v1-beta
+        with:
+          version: "4.32.0"
+          edition: "oss"
+          cache: true
+
+      - name: Second Install (With Cache)
+        uses: liquibase/setup-liquibase@v1-beta
+        with:
+          version: "4.32.0"
+          edition: "oss"
+          cache: true
+
+      - name: Verify Both Installations
+        run: |
+          liquibase --version
+
+  # 6. Pro Edition Tests (if license available)
+  test-pro-edition:
+    name: Pro Edition Test
+    runs-on: ubuntu-latest
+    if: (github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'basic' || github.event.inputs.test_scenario == '') && vars.HAS_PRO_LICENSE == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Liquibase Pro
+        uses: liquibase/setup-liquibase@v1-beta
+        with:
+          version: "4.32.0"
+          edition: "pro"
+          cache: true
+        env:
+          LIQUIBASE_LICENSE_KEY: ${{ secrets.PRO_LICENSE_KEY }}
+
+      - name: Verify Pro Installation
+        run: |
+          liquibase --version
+
+  # 7. Output Validation Tests
+  test-output-validation:
+    name: Output Validation Test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_scenario == 'all' || github.event.inputs.test_scenario == 'basic' || github.event.inputs.test_scenario == ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Liquibase
+        id: setup
+        uses: liquibase/setup-liquibase@v1-beta
+        with:
+          version: "4.32.0"
+          edition: "oss"
+          cache: true
+
+      - name: Validate Outputs
+        run: |
+          echo "Version output: ${{ steps.setup.outputs.liquibase-version }}"
+          echo "Path output: ${{ steps.setup.outputs.liquibase-path }}"
+
+          # Check version output format
+          if [[ ! "${{ steps.setup.outputs.liquibase-version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "ERROR: Invalid version format"
+            exit 1
+          fi
+
+          # Check path output exists
+          if [ ! -f "${{ steps.setup.outputs.liquibase-path }}" ]; then
+            echo "ERROR: Liquibase path does not exist"
+            exit 1
+          fi
+
+          # Verify outputs can be used in subsequent steps
+          "${{ steps.setup.outputs.liquibase-path }}" --version
+
+  # Summary job
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      [
+        test-oss-basic,
+        test-oss-matrix,
+        test-cross-platform,
+        test-database-operations,
+        test-invalid-version,
+        test-pro-without-license,
+        test-caching-performance,
+        test-output-validation,
+      ]
+    steps:
+      - name: Print Test Results
+        run: |
+          echo "## UAT Test Results Summary"
+          echo "### Basic Tests"
+          echo "- OSS Basic: ${{ needs.test-oss-basic.result }}"
+          echo "- OSS Matrix: ${{ needs.test-oss-matrix.result }}"
+          echo "- Output Validation: ${{ needs.test-output-validation.result }}"
+          echo ""
+          echo "### Platform Tests"
+          echo "- Cross-platform: ${{ needs.test-cross-platform.result }}"
+          echo ""
+          echo "### Integration Tests"
+          echo "- Database Operations: ${{ needs.test-database-operations.result }}"
+          echo ""
+          echo "### Error Handling Tests"
+          echo "- Invalid Version: ${{ needs.test-invalid-version.result }}"
+          echo "- Pro Without License: ${{ needs.test-pro-without-license.result }}"
+          echo ""
+          echo "### Performance Tests"
+          echo "- Caching Performance: ${{ needs.test-caching-performance.result }}"
