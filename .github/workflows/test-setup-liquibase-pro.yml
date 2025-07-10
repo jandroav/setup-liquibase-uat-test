@@ -19,8 +19,8 @@ env:
   LIQUIBASE_LOG_FORMAT: json_pretty
   LIQUIBASE_LOG_LEVEL: warning
   LIQUIBASE_MIRROR_CONSOLE_MESSAGES_TO_LOG: false
-  LIQUIBASE_SEARCH_PATH: /liquibase/changelog
-  LIQUIBASE_SHOW_BANNER: false
+  #LIQUIBASE_SEARCH_PATH: /liquibase/changelog
+  #LIQUIBASE_SHOW_BANNER: false
 
 jobs:
   # 1. Basic Installation Tests
