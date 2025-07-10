@@ -30,20 +30,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # - name: Setup Liquibase Pro
-      #   uses: liquibase/setup-liquibase@v1-beta
-      #   with:
-      #     version: "4.32.0"
-      #     edition: "pro"
-      #     cache: true
-      #   env:
-      #     LIQUIBASE_LICENSE_KEY: ${{ secrets.PRO_LICENSE_KEY }}
-
-      # - name: Verify Installation
-      #   run: |
-      #     liquibase --version
-      #     which liquibase
-
       - name: Setup Liquibase
         uses: liquibase/setup-liquibase@v1-beta # Proposed new action
         with:
@@ -52,3 +38,8 @@ jobs:
           # Potentially other options like license-key for pro
         env:
           LIQUIBASE_LICENSE_KEY: ${{ secrets.PRO_LICENSE_KEY }}
+
+      - name: Verify Installation
+        run: |
+          liquibase --version
+          which liquibase
