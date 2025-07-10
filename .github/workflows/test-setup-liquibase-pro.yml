@@ -27,3 +27,12 @@ jobs:
         run: |
           liquibase --version
           which liquibase
+
+      - name: Setup Liquibase
+        uses: liquibase/setup-liquibase@v1-beta # Proposed new action
+        with:
+          edition: "pro" # Parameter to specify 'oss' or 'pro'
+          version: "4.32.0" # Or '5.0.0', etc.
+          # Potentially other options like license-key for pro
+        env:
+          LIQUIBASE_LICENSE_KEY: ${{ secrets.PRO_LICENSE_KEY }}
