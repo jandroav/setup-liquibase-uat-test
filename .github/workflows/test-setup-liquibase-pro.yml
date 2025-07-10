@@ -15,7 +15,7 @@ env:
   LIQUIBASE_COMMAND_CHANGELOG_FILE: changelog.main.xml
   LIQUIBASE_COMMAND_CHECKS_RUN_CHECKS_OUTPUT: issues
   LIQUIBASE_DBCLHISTORY_ENABLED: true
-  #LIQUIBASE_LOG_FILE: /liquibase/changelog/liquibase.dev.log.json
+  LIQUIBASE_LOG_FILE: /liquibase/changelog/liquibase.dev.log.json
   LIQUIBASE_LOG_FORMAT: json_pretty
   LIQUIBASE_LOG_LEVEL: warning
   LIQUIBASE_MIRROR_CONSOLE_MESSAGES_TO_LOG: false
@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Liquibase
-        uses: liquibase/setup-liquibase@v1-beta # Proposed new action
+        uses: liquibase/setup-liquibase@v2-beta # Proposed new action
         with:
           edition: "pro" # Parameter to specify 'oss' or 'pro'
           version: "4.32.0" # Or '5.0.0', etc.
