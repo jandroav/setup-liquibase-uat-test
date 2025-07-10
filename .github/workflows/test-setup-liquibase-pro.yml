@@ -1,0 +1,29 @@
+# .github/workflows/test-setup-liquibase.yml
+name: Test Setup Liquibase Beta - Comprehensive UAT
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  # 1. Basic Installation Tests
+  test-pro-basic:
+    name: PRO Basic Installation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Liquibase Pro
+        uses: liquibase/setup-liquibase@v1-beta
+        with:
+          version: "4.32.0"
+          edition: "pro"
+          cache: true
+        env:
+          LIQUIBASE_LICENSE_KEY: ${{ secrets.PRO_LICENSE_KEY }}
+
+      - name: Verify Installation
+        run: |
+          liquibase --version
+          which liquibase
