@@ -1,0 +1,159 @@
+###
+### This sample pipeline is intended as a starting point for integration between Liquibase Pro and GitHub pipelines
+### Review and update prior to use
+###
+### Liquibase sales: https://www.liquibase.com/contact
+### Liquibase support: https://support.liquibase.com
+###
+
+###
+### Prior to running the following files must exist in repository:
+###
+### 1. liquibase.flowfile.yaml
+###    Liquibase flow file
+###    https://docs.liquibase.com/commands/flow/flow.html
+###
+### 2. liquibase.checks-settings.conf
+###    Liquibase policy checks configuration file
+###    https://docs.liquibase.com/liquibase-pro/policy-checks/home.html
+###
+### 3. changelog.main.xml
+###    Liquibase changelog file
+###    https://docs.liquibase.com/concepts/changelogs/home.html
+###
+
+###
+### GitHub Actions documentation: https://docs.github.com/en/actions
+###
+
+name: 1. Liquibase Workflow
+
+###
+### Pipelines can be triggered manually or via events
+###
+on:
+  workflow_dispatch:
+    inputs:
+      labels:
+        type: string
+        description: Label filters
+      policy-checks:
+        type: choice
+        description: Policy checks T/F
+        required: true
+        options:
+          - T
+          - F
+      drift-detection:
+        type: choice
+        description: Drift detection T/F
+        required: true
+        options:
+          - T
+          - F
+      test-rollbacks:
+        type: choice
+        description: Test rollback scripts T/F
+        required: true
+        options:
+          - T
+          - F
+###
+### Set Liquibase environment variables
+###
+env:
+  ###
+  ### Prompts
+  ###
+  LB_LABELS: ${{ github.event.inputs.labels }}
+  LB_TEST_CHECKS: ${{ github.event.inputs.policy-checks }}
+  LB_TEST_DRIFT: ${{ github.event.inputs.drift-detection }}
+  LB_TEST_ROLLBACKS: ${{ github.event.inputs.test-rollbacks }}
+  ###
+  ### Liquibase specific
+  ###
+  JAVA_OPTS: -Dnet.snowflake.jdbc.enableBouncyCastle=true
+  LB_BASE_DIR: /liquibase/changelog
+  LB_ENVIRONMENT: DEV
+  LIQUIBASE_COMMAND_CHANGELOG_FILE: changelog.main.xml
+  LIQUIBASE_COMMAND_CHECKS_RUN_CHECKS_OUTPUT: issues
+  LIQUIBASE_DBCLHISTORY_ENABLED: true
+  LIQUIBASE_LOG_FILE: /liquibase/changelog/liquibase.dev.log.json
+  LIQUIBASE_LOG_FORMAT: json_pretty
+  LIQUIBASE_LOG_LEVEL: warning
+  LIQUIBASE_MIRROR_CONSOLE_MESSAGES_TO_LOG: false
+  LIQUIBASE_SEARCH_PATH: /liquibase/changelog
+  LIQUIBASE_SHOW_BANNER: false
+  ###
+  ### These values should be pulled from GitHub secrets
+  ### Secrets should include LIQUIBASE_COMMAND_URL, LIQUIBASE_COMMAND_USERNAME, LIQUIBASE_COMMAND_PASSWORD, LIQUIBASE_LICENSE_KEY
+  ###
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  ###
+  ### The session token expires and must be refreshed before each demo
+  ###
+  AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
+  LB_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+
+  LIQUIBASE_COMMAND_URL: aws-secrets,jbennett-demo,snowflake_url
+  LIQUIBASE_COMMAND_USERNAME: aws-secrets,jbennett-demo,snowflake_username
+  # LIQUIBASE_LICENSE_KEY: aws-secrets,jbennett-demo,liquibase-license
+
+jobs:
+  liquibase-workflow:
+    ###
+    ### Update agent location
+    ###
+    runs-on: ubuntu-latest
+
+    ###
+    ### Checkout repository
+    ###
+    steps:
+      - name: Checking out repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.LIQUIBASE_GITHUB_TOKEN }}
+      ###
+      ### Setup Liquibase action
+      ###
+      - name: Setup Liquibase
+        uses: liquibase/setup-liquibase@v1-beta # Proposed new action
+        with:
+          edition: "pro" # Parameter to specify 'oss' or 'pro'
+          version: "4.32.0" # Or '5.0.0', etc.
+          # Potentially other options like license-key for pro
+        env:
+          LIQUIBASE_LICENSE_KEY: ${{ secrets.PRO_LICENSE_KEY }}
+
+      ###
+      ### Run the Liquibase flowfile
+      ### Liquibase should be installed where your agents run or invoked via Docker
+      ###
+      - name: Running Liquibase
+        run: liquibase flow
+      ###
+      ### Update artifacts
+      ###
+      - name: Updating artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifacts-${{ env.LB_ENVIRONMENT }}
+          path: |
+            **/*.json
+            **/*.html
+      ###
+      ### Update respository
+      ###
+      - name: Updating repository
+        if: success() || failure()
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update Liquibase repository."
+          git push --force
