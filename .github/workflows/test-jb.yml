@@ -115,8 +115,6 @@ jobs:
     steps:
       - name: Checking out repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.LIQUIBASE_GITHUB_TOKEN }}
       ###
       ### Setup Liquibase action
       ###
