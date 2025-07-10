@@ -1,5 +1,5 @@
 # .github/workflows/test-setup-liquibase.yml
-name: Test Setup Liquibase Beta - Comprehensive UAT
+name: Test Setup Liquibase PRO
 
 on:
   workflow_dispatch:
