@@ -20,7 +20,8 @@ env:
   LIQUIBASE_LOG_LEVEL: warning
   LIQUIBASE_MIRROR_CONSOLE_MESSAGES_TO_LOG: false
   #LIQUIBASE_SEARCH_PATH: /liquibase/changelog
-  #LIQUIBASE_SHOW_BANNER: false
+  LIQUIBASE_SHOW_BANNER: false
+  LIQUIBASE_LICENSE_KEY: ${{ secrets.PRO_LICENSE_KEY }}
 
 jobs:
   # 1. Basic Installation Tests
@@ -36,10 +37,8 @@ jobs:
           edition: "pro" # Parameter to specify 'oss' or 'pro'
           version: "4.32.0" # Or '5.0.0', etc.
           # Potentially other options like license-key for pro
-        env:
-          LIQUIBASE_LICENSE_KEY: ${{ secrets.PRO_LICENSE_KEY }}
 
       - name: Verify Installation
         run: |
-          liquibase --license-key=${{ secrets.PRO_LICENSE_KEY }} --version
+          liquibase --version
           which liquibase
