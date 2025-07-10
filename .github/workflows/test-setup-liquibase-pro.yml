@@ -5,12 +5,11 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    
+
 env:
   ###
   ### Liquibase specific
   ###
-  JAVA_OPTS: -Dnet.snowflake.jdbc.enableBouncyCastle=true
   LB_BASE_DIR: /liquibase/changelog
   LB_ENVIRONMENT: DEV
   LIQUIBASE_COMMAND_CHANGELOG_FILE: changelog.main.xml
