@@ -5,6 +5,23 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    
+env:
+  ###
+  ### Liquibase specific
+  ###
+  JAVA_OPTS: -Dnet.snowflake.jdbc.enableBouncyCastle=true
+  LB_BASE_DIR: /liquibase/changelog
+  LB_ENVIRONMENT: DEV
+  LIQUIBASE_COMMAND_CHANGELOG_FILE: changelog.main.xml
+  LIQUIBASE_COMMAND_CHECKS_RUN_CHECKS_OUTPUT: issues
+  LIQUIBASE_DBCLHISTORY_ENABLED: true
+  LIQUIBASE_LOG_FILE: /liquibase/changelog/liquibase.dev.log.json
+  LIQUIBASE_LOG_FORMAT: json_pretty
+  LIQUIBASE_LOG_LEVEL: warning
+  LIQUIBASE_MIRROR_CONSOLE_MESSAGES_TO_LOG: false
+  LIQUIBASE_SEARCH_PATH: /liquibase/changelog
+  LIQUIBASE_SHOW_BANNER: false
 
 jobs:
   # 1. Basic Installation Tests
