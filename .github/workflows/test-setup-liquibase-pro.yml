@@ -41,5 +41,5 @@ jobs:
 
       - name: Verify Installation
         run: |
-          liquibase --version
+          liquibase --license-key=${{ secrets.PRO_LICENSE_KEY }} --version
           which liquibase
