@@ -10,7 +10,6 @@ env:
   ###
   ### Liquibase specific
   ###
-  LIQUIBASE_DBCLHISTORY_ENABLED: true
   LIQUIBASE_LOG_FILE: /liquibase/changelog/liquibase.dev.log.json
   LIQUIBASE_LOG_FORMAT: json_pretty
   LIQUIBASE_LOG_LEVEL: warning
