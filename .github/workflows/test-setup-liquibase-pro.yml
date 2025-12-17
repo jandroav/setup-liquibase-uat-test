@@ -35,8 +35,8 @@ jobs:
       - name: Setup Liquibase
         uses: liquibase/setup-liquibase@v2.1.0-alpha # Proposed new action
         with:
-          edition: "pro" # Parameter to specify 'oss' or 'pro'
-          version: "4.32.0" # Or '5.0.0', etc.
+          edition: "secure" # Parameter to specify 'oss' or 'pro'
+          version: "5.0.3" # Or '5.0.0', etc.
           # Potentially other options like license-key for pro
 
       - name: Verify Installation
