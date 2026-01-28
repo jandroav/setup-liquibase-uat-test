@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Liquibase
-        uses: liquibase/setup-liquibase@v2.1.0-alpha # Proposed new action
+        uses: liquibase/setup-liquibase@v2.1.0 # Proposed new action
         with:
           edition: "secure" # Parameter to specify 'oss' or 'pro'
           version: "5.0.3" # Or '5.0.0', etc.
